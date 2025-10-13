@@ -188,6 +188,32 @@ PY
       echo "WARNING: Mesa DRI drivers not found at ${DRI_SRC}" >&2
     fi
 
+    GLIBC_DIR="/bundle/lib/glibc"
+    mkdir -p "${GLIBC_DIR}"
+    for base in \
+      libc.so.6 \
+      libpthread.so.0 \
+      libm.so.6 \
+      libdl.so.2 \
+      libgcc_s.so.1 \
+      librt.so.1 \
+      libanl.so.1 \
+      libutil.so.1 \
+      libresolv.so.2 \
+      libnsl.so.1 \
+      libcrypt.so.1 \
+      libBrokenLocale.so.1 \
+      libnss_dns.so.2 \
+      libnss_files.so.2 \
+      libnss_compat.so.2 \
+      libnss_nis.so.2 \
+      libnss_nisplus.so.2 \
+    ; do
+      if [ -f "/bundle/lib/$base" ]; then
+        mv "/bundle/lib/$base" "${GLIBC_DIR}/"
+      fi
+    done
+
     echo "==> Patching interpreter + RPATH"
     patchelf --set-interpreter \$ORIGIN/ld-linux-x86-64.so.2 /bundle/stress-ng
     patchelf --set-rpath       \$ORIGIN/lib                 /bundle/stress-ng

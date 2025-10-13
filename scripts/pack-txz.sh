@@ -136,6 +136,16 @@ append_path() {
   fi
 }
 
+HOST_LOADER=""
+for candidate in /lib64/ld-linux-x86-64.so.2 /lib/x86_64-linux-gnu/ld-linux-x86-64.so.2; do
+  if [ -x "$candidate" ]; then
+    HOST_LOADER="$candidate"
+    break
+  fi
+done
+
+FORCE_BUNDLE="${STRESS_NG_GPU_FORCE_BUNDLE:-0}"
+
 if [ -d "${DRI_DIR}" ]; then
   LIBGL_DRIVERS_PATH="$(append_path "${LIBGL_DRIVERS_PATH-}" "${DRI_DIR}")"
   export LIBGL_DRIVERS_PATH
@@ -143,13 +153,25 @@ if [ -d "${DRI_DIR}" ]; then
   export GBM_DRIVERS_PATH
 fi
 
-if [ -x "${LOADER}" ]; then
-  LD_PATH="${LD_LIBRARY_PATH-}"
-  LD_PATH="$(append_path "${LD_PATH}" "${LIB_DIR}")"
+if [ -n "${HOST_LOADER}" ] && [ "${FORCE_BUNDLE}" != "1" ]; then
+  LD_PATH="$(append_path "${LD_LIBRARY_PATH-}" "${LIB_DIR}")"
   export LD_LIBRARY_PATH="${LD_PATH}"
-  exec "${LOADER}" --library-path "${LD_LIBRARY_PATH}" "${BIN}" "$@"
+  exec "${HOST_LOADER}" "${BIN}" "$@"
 fi
 
+if [ -x "${LOADER}" ]; then
+  GLIBC_DIR="${LIB_DIR}/glibc"
+  LIB_SEARCH="${LIB_DIR}"
+  if [ -d "${GLIBC_DIR}" ]; then
+    LIB_SEARCH="${GLIBC_DIR}:${LIB_SEARCH}"
+  fi
+  if [ -n "${LD_LIBRARY_PATH-}" ]; then
+    LIB_SEARCH="${LIB_SEARCH}:${LD_LIBRARY_PATH}"
+  fi
+  exec "${LOADER}" --library-path "${LIB_SEARCH}" "${BIN}" "$@"
+fi
+
+# Fallback: no suitable loader found
 exec "${BIN}" "$@"
 EOF
 chmod 0755 "${WRAPPER_PATH}"
