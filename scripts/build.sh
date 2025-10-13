@@ -67,7 +67,7 @@ docker run --rm -t \
     set -euo pipefail
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-      ca-certificates curl build-essential git pkg-config patchelf file \
+      ca-certificates curl build-essential git pkg-config patchelf file python3 \
       libdrm-dev libgbm-dev libegl1-mesa-dev libgles2-mesa-dev
     update-ca-certificates
 
@@ -102,6 +102,45 @@ docker run --rm -t \
       fi
     }
 
+    ldd_deps() {
+      local target="$1"
+      python3 - "$target" <<'PY'
+import subprocess, sys
+
+def main():
+    target = sys.argv[1]
+    try:
+        out = subprocess.check_output(["ldd", target], text=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as exc:
+        out = exc.stdout or ""
+    seen = set()
+    for line in out.splitlines():
+        line = line.strip()
+        if not line or line.startswith("statically"):
+            continue
+        path = ""
+        if "=>" in line:
+            _, rhs = line.split("=>", 1)
+            token = rhs.strip().split()
+            if token:
+                path = token[0]
+        else:
+            token = line.split()
+            if token:
+                path = token[0]
+        if not path or path == "not" or path == "found":
+            continue
+        if not path.startswith("/"):
+            continue
+        if path not in seen:
+            print(path)
+            seen.add(path)
+
+if __name__ == "__main__":
+    main()
+PY
+    }
+
     mkdir -p /bundle/lib /out
     cp -v /src/stress-ng /bundle/stress-ng
 
@@ -116,10 +155,9 @@ docker run --rm -t \
     fi
 
     # Flatten dependencies into /bundle/lib
-    libs=$(ldd /bundle/stress-ng | awk "/=>/ {print \$3} /^[[:space:]]*\\// {print \$1}" | sort -u)
-    for so in $libs; do
+    while IFS= read -r so; do
       copy_so "$so"
-    done
+    done < <(ldd_deps /bundle/stress-ng)
 
     # Ensure Mesa/DRM libs are present (and their SONAMEs)
     for extra in \
@@ -142,10 +180,9 @@ docker run --rm -t \
       cp -a "${DRI_SRC}/." /bundle/lib/dri/
       echo "==> Resolving Mesa driver dependencies"
       find /bundle/lib/dri -type f -name "*.so" -print0 | while IFS= read -r -d "" driver; do
-        deps=$(ldd "$driver" | awk "/=>/ {print \\$3} /^[[:space:]]*\\// {print \\$1}")
-        for dep in $deps; do
+        while IFS= read -r dep; do
           copy_so "$dep"
-        done
+        done < <(ldd_deps "$driver")
       done
     else
       echo "WARNING: Mesa DRI drivers not found at ${DRI_SRC}" >&2
