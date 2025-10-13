@@ -47,6 +47,22 @@ make REPO=myrepo
 
 ---
 
+## ⚙️ Configuration Variables
+
+All baseline settings live in `.env`. The Makefile and helper scripts load this file automatically, so it acts as the single source of truth for values such as `REF`, `OUT`, `PLATFORM`, and packaging metadata. 
+
+#### Overriding Examples
+
+> Update `.env` to change the defaults, or override them at runtime with environment variables / CLI flags - for example:
+>
+> - `make REF=v0.19.05`
+> - `OUT=custom scripts/build.sh`
+> - `./scripts/pack-txz.sh --out custom-dist --in dist/stress-ng-gpu-glibc-bundle.tar.gz`
+
+Command-line flags always win over environment variables, which in turn override `.env`.
+
+---
+
 ## 🧪 Use on Unraid (Host, no Docker needed)
 
 Copy to your server and extract:

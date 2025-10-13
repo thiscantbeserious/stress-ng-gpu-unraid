@@ -2,12 +2,26 @@
 set -euo pipefail
 
 IN_BUNDLE=""
-OUT_DIR="dist"
 VER="0.0.0"
-ARCH="x86_64"
-BUILD="1_unraid"
-PKGNAME="stress-ng-gpu-unraid"
 REPO_DIR=""
+
+# Load shared defaults from .env (project root), but keep existing env overrides.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+USER_OUT="${OUT-}"
+USER_ARCH="${ARCH-}"
+USER_BUILD="${BUILD-}"
+USER_PKGNAME="${PKGNAME-}"
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ROOT_DIR}/.env"
+  set +a
+fi
+OUT="${USER_OUT:-${OUT:-dist}}"
+ARCH="${USER_ARCH:-${ARCH:-x86_64}}"
+BUILD="${USER_BUILD:-${BUILD:-1_unraid}}"
+PKGNAME="${USER_PKGNAME:-${PKGNAME:-stress-ng-gpu-unraid}}"
 
 usage() {
   cat <<EOF
@@ -19,7 +33,7 @@ Optionally, also generate a minimal Slackware repository (PACKAGES.TXT + CHECKSU
 Options:
   --in       Path to the bundle tar.gz (required)
   --ver      Version string to embed in package name (default: ${VER})
-  --out      Output directory for the .txz (default: ${OUT_DIR})
+  --out      Output directory for the .txz (default: ${OUT})
   --repo     Directory to receive a repo layout (will be created). When provided,
              the .txz is copied there and PACKAGES.TXT + CHECKSUMS.md5 are generated.
 
@@ -34,7 +48,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --in) IN_BUNDLE="$2"; shift 2;;
     --ver) VER="$2"; shift 2;;
-    --out) OUT_DIR="$2"; shift 2;;
+    --out) OUT="$2"; shift 2;;
     --repo) REPO_DIR="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 1;;
@@ -46,7 +60,7 @@ if [[ -z "$IN_BUNDLE" || ! -f "$IN_BUNDLE" ]]; then
   exit 1
 fi
 
-mkdir -p "$OUT_DIR"
+mkdir -p "$OUT"
 
 WORK="$(mktemp -d)"
 PKGROOT="${WORK}/PKGROOT"
@@ -95,15 +109,15 @@ PKG="${PKGNAME}-${VER}-${ARCH}-${BUILD}.txz"
 ( cd "${PKGROOT}" && tar --owner=0 --group=0 -Jcvf "${PWD}/${PKG}" . ) >/dev/null
 
 # 5) Move to out dir
-mkdir -p "${OUT_DIR}"
-mv "${PKGROOT}/${PKG}" "${OUT_DIR}/${PKG}"
-echo "==> Created: ${OUT_DIR}/${PKG}"
+mkdir -p "${OUT}"
+mv "${PKGROOT}/${PKG}" "${OUT}/${PKG}"
+echo "==> Created: ${OUT}/${PKG}"
 
 # 6) Optional: create a minimal Slackware repo (copy package + generate metadata)
 if [[ -n "$REPO_DIR" ]]; then
   echo "==> Building Slackware repo at: $REPO_DIR"
   mkdir -p "$REPO_DIR"
-  cp -v "${OUT_DIR}/${PKG}" "$REPO_DIR/"
+  cp -v "${OUT}/${PKG}" "$REPO_DIR/"
 
   # Compute sizes
   SIZEC_K=$(du -k "${REPO_DIR}/${PKG}" | awk '{print $1}')

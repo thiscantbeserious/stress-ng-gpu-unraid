@@ -1,10 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Defaults
-REF="master"                 # upstream branch/tag/commit
-OUT_DIR="dist"
-PLATFORM="linux/amd64"       # Unraid is x86_64; keep this default
+# Load shared defaults from .env (project root), but let env vars override.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+USER_REF="${REF-}"
+USER_OUT="${OUT-}"
+USER_PLATFORM="${PLATFORM-}"
+if [[ -f "${ROOT_DIR}/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "${ROOT_DIR}/.env"
+  set +a
+fi
+REF="${USER_REF:-${REF:-master}}"
+OUT="${USER_OUT:-${OUT:-dist}}"
+PLATFORM="${USER_PLATFORM:-${PLATFORM:-linux/amd64}}"
+
+cd "${ROOT_DIR}"
 
 usage() {
   cat <<EOF
@@ -17,7 +30,7 @@ Artifacts are written to <out>/ as:
 
 Defaults:
   --ref       ${REF}
-  --out       ${OUT_DIR}
+  --out       ${OUT}
   --platform  ${PLATFORM}
 
 Examples:
@@ -31,22 +44,22 @@ EOF
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --ref) REF="$2"; shift 2;;
-    --out) OUT_DIR="$2"; shift 2;;
+    --out) OUT="$2"; shift 2;;
     --platform) PLATFORM="$2"; shift 2;;
     -h|--help) usage; exit 0;;
     *) echo "Unknown arg: $1"; usage; exit 1;;
   esac
 done
 
-mkdir -p "${OUT_DIR}"
+mkdir -p "${OUT}"
 
 echo "==> Building stress-ng (ref=${REF}) for platform ${PLATFORM}"
-echo "==> Output directory: ${OUT_DIR}"
+echo "==> Output directory: ${OUT}"
 
 docker run --rm -t \
   --platform="${PLATFORM}" \
   -e STRESS_NG_REF="${REF}" \
-  -v "$(pwd)/${OUT_DIR}:/out" \
+  -v "$(pwd)/${OUT}:/out" \
   debian:bookworm bash -exc '
     set -euo pipefail
     apt-get update
@@ -127,5 +140,5 @@ docker run --rm -t \
   '
 
 echo ""
-echo "Artifacts are in ${OUT_DIR}/"
-ls -l "${OUT_DIR}"
+echo "Artifacts are in ${OUT}/"
+ls -l "${OUT}"

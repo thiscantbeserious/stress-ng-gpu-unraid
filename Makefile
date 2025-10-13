@@ -1,10 +1,14 @@
 .PHONY: all build dist pack repo clean doctor help
 
+-include .env
+
 # Configurable via environment:
 REF ?= master
 OUT ?= dist
 PLATFORM ?= linux/amd64
 REPO ?= repo   # repo output directory (for PACKAGES.TXT, CHECKSUMS.md5)
+
+export REF OUT PLATFORM REPO ARCH BUILD PKGNAME
 
 # Default: build artifacts into ./dist using docker run
 all: dist
@@ -14,7 +18,7 @@ ensure-exec:
 
 ## Build the GPU-enabled stress-ng bundle using docker run
 build: ensure-exec
-	./scripts/build.sh --ref $(REF) --out $(OUT) --platform $(PLATFORM)
+	./scripts/build.sh
 
 ## Build + show artifacts
 dist: build
@@ -22,11 +26,11 @@ dist: build
 
 ## Create a Slackware-style .txz from ./dist bundle (for un-get)
 pack: ensure-exec
-	./scripts/pack-txz.sh --in $(OUT)/stress-ng-gpu-glibc-bundle.tar.gz --ver $(REF) --out $(OUT)
+	./scripts/pack-txz.sh --in $(OUT)/stress-ng-gpu-glibc-bundle.tar.gz --ver $(REF)
 
 ## Build + create repo metadata (PACKAGES.TXT, CHECKSUMS.md5)
 repo: ensure-exec dist
-	./scripts/pack-txz.sh --in $(OUT)/stress-ng-gpu-glibc-bundle.tar.gz --ver $(REF) --out $(OUT) --repo $(REPO)
+	./scripts/pack-txz.sh --in $(OUT)/stress-ng-gpu-glibc-bundle.tar.gz --ver $(REF) --repo $(REPO)
 
 ## Clean artifacts
 clean:
