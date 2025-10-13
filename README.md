@@ -53,23 +53,26 @@ Copy to your server and extract:
 
 ```bash
 scp dist/stress-ng-gpu-glibc-bundle.tar.gz root@UNRAID:/boot/
-
-ssh root@UNRAID '
-  mkdir -p /boot/stress-ng-gpu &&
-  tar -C /boot/stress-ng-gpu -xzf /boot/stress-ng-gpu-glibc-bundle.tar.gz &&
-  cd /boot/stress-ng-gpu &&
-  ./stress-ng --version &&
-  ls -l /dev/dri/renderD* || true
-'
+ssh root@UNRAID
+mkdir -p /boot/stress-ng-gpu 
+tar -C /boot/stress-ng-gpu -xzf /boot/stress-ng-gpu-glibc-bundle.tar.gz
+cd /boot/stress-ng-gpu
+./stress-ng --version 
+ls -l /dev/dri/renderD* || true
 ```
 
 Run a GPU test (Intel/AMD via DRM/GBM/EGL):
 
 ```bash
-ssh root@UNRAID '
-  cd /boot/stress-ng-gpu &&
-  ./stress-ng --gpu 1 --gpu-devnode /dev/dri/renderD128               --gpu-frag 500 --gpu-tex-size 4096 --gpu-upload 1               --timeout 5m --metrics
-'
+ssh root@UNRAID
+cd /boot/stress-ng-gpu
+./stress-ng --gpu 1\ 
+            --gpu-devnode /dev/dri/renderD128\               
+            --gpu-frag 500\
+            --gpu-tex-size 4096\
+            --gpu-upload 1\
+            --timeout 5m\
+            --metrics
 ```
 
 > NVIDIA proprietary driver stacks typically do not expose a GBM/EGL path compatible with `--gpu`; use compute-specific tools (CUDA/OpenCL) in that case.
