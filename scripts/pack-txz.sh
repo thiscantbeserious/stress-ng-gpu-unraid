@@ -120,6 +120,24 @@ BUNDLE_DIR="/opt/stress-ng-gpu"
 BIN="${BUNDLE_DIR}/stress-ng"
 LIB_DIR="${BUNDLE_DIR}/lib"
 LOADER="${BUNDLE_DIR}/ld-linux-x86-64.so.2"
+DRI_DIR="${LIB_DIR}/dri"
+
+prepend_path() {
+  local value="$1"
+  local current="$2"
+  if [ -n "${current}" ]; then
+    printf '%s:%s\n' "$value" "$current"
+  else
+    printf '%s\n' "$value"
+  fi
+}
+
+if [ -d "${DRI_DIR}" ]; then
+  LIBGL_DRIVERS_PATH="$(prepend_path "${DRI_DIR}" "${LIBGL_DRIVERS_PATH-}")"
+  export LIBGL_DRIVERS_PATH
+  GBM_DRIVERS_PATH="$(prepend_path "${DRI_DIR}" "${GBM_DRIVERS_PATH-}")"
+  export GBM_DRIVERS_PATH
+fi
 
 if [ -x "${LOADER}" ]; then
   LD_PATH="${LIB_DIR}"

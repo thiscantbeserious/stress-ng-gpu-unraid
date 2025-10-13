@@ -86,6 +86,22 @@ docker run --rm -t \
     /src/stress-ng --version || true
 
     echo "==> Bundling loader + libs"
+    copy_so() {
+      local candidate="$1"
+      [ -n "$candidate" ] || return
+      [ -f "$candidate" ] || return
+      local real
+      real=$(readlink -f "$candidate")
+      local base
+      base=$(basename "$real")
+      cp -vn "$real" "/bundle/lib/$base" || true
+      local linkname
+      linkname=$(basename "$candidate")
+      if [ "$linkname" != "$base" ]; then
+        ln -sfn "$base" "/bundle/lib/$linkname" || true
+      fi
+    }
+
     mkdir -p /bundle/lib /out
     cp -v /src/stress-ng /bundle/stress-ng
 
@@ -102,13 +118,7 @@ docker run --rm -t \
     # Flatten dependencies into /bundle/lib
     libs=$(ldd /bundle/stress-ng | awk "/=>/ {print \$3} /^[[:space:]]*\\// {print \$1}" | sort -u)
     for so in $libs; do
-      [ -f "$so" ] || continue
-      real=$(readlink -f "$so")
-      base=$(basename "$real")
-      cp -v "$real" "/bundle/lib/$base" || true
-      # create a SONAME symlink if needed
-      soname=$(basename "$so")
-      if [ "$soname" != "$base" ]; then ln -sfn "$base" "/bundle/lib/$soname" || true; fi
+      copy_so "$so"
     done
 
     # Ensure Mesa/DRM libs are present (and their SONAMEs)
@@ -122,13 +132,24 @@ docker run --rm -t \
       /usr/lib/x86_64-linux-gnu/libffi.so.8 \
       /usr/lib/x86_64-linux-gnu/libwayland-server.so.0 \
     ; do
-      if [ -f "$extra" ]; then
-        real=$(readlink -f "$extra")
-        base=$(basename "$real")
-        cp -vn "$real" "/bundle/lib/$base" || true
-        ln -sfn "$base" "/bundle/lib/$(basename "$extra")" || true
-      fi
+      copy_so "$extra"
     done
+
+    DRI_SRC="/usr/lib/x86_64-linux-gnu/dri"
+    if [ -d "${DRI_SRC}" ]; then
+      echo "==> Copying Mesa DRI drivers"
+      mkdir -p /bundle/lib/dri
+      cp -a "${DRI_SRC}/." /bundle/lib/dri/
+      echo "==> Resolving Mesa driver dependencies"
+      find /bundle/lib/dri -type f -name "*.so" -print0 | while IFS= read -r -d "" driver; do
+        deps=$(ldd "$driver" | awk "/=>/ {print \\$3} /^[[:space:]]*\\// {print \\$1}")
+        for dep in $deps; do
+          copy_so "$dep"
+        done
+      done
+    else
+      echo "WARNING: Mesa DRI drivers not found at ${DRI_SRC}" >&2
+    fi
 
     echo "==> Patching interpreter + RPATH"
     patchelf --set-interpreter \$ORIGIN/ld-linux-x86-64.so.2 /bundle/stress-ng
