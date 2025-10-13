@@ -9,7 +9,7 @@ The bundle includes the binary, the glibc loader, and all required `.so` librari
 
 - Docker
 - Internet access to fetch sources and base images
-- make (or you execute the scripts yourself in ./scripts)
+- `make` (or you execute the scripts yourself in `./scripts`)
 
 ---
 
