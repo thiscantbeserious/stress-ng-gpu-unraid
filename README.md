@@ -45,19 +45,44 @@ make PLATFORM=linux/amd64
 make REPO=myrepo
 ```
 
+First-time setup? Pull the required Docker images up front:
+
+```bash
+make ensure-images
+```
+
 ---
 
 ## ⚙️ Configuration Variables
 
 All baseline settings live in `.env`. The Makefile and helper scripts load this file automatically, so it acts as the single source of truth for values such as `REF`, `OUT`, `PLATFORM`, and packaging metadata. 
 
-#### Overriding Examples
+### Key entries in `.env`:
+| Name | Description |
+| --- | --- |
+| `REF` | Default stress-ng ref (branch/tag/sha) fetched inside the build container. |
+| `OUT` | Output directory for bundle artifacts and packages. |
+| `PLATFORM` | Docker platform passed to `docker run` (e.g. `linux/amd64`). |
+| `REPO` | Target directory for generated Slackware repo metadata. |
+| `ARCH` | Architecture label embedded in the Slackware package filename. |
+| `BUILD` | Build suffix appended to the Slackware package filename. |
+| `PKGNAME` | Base name for the Slackware package. |
+| `MAINTAINER` | Packager contact injected into the rendered `slack-desc`. |
+| `SLACKWARE_IMAGE` | Docker image used to run Slackware’s `makepkg` when packaging. |
+| `BUILD_IMAGE` | Docker image used by `scripts/build.sh` for compiling the bundle. |
 
-> Update `.env` to change the defaults, or override them at runtime with environment variables / CLI flags - for example:
->
-> - `make REF=v0.19.05`
-> - `OUT=custom scripts/build.sh`
-> - `./scripts/pack-txz.sh --out custom-dist --in dist/stress-ng-gpu-glibc-bundle.tar.gz`
+#### Overriding Examples
+```bash
+#OVERRIDE REF
+make REF=v0.19.05
+
+#OVERRIDE OUT
+OUT=custom scripts/build.sh
+
+#OVERRIDE out and dist
+./scripts/pack-txz.sh --out custom-dist --in dist/stress-ng-gpu-glibc-bundle.tar.gz
+```
+
 
 Command-line flags always win over environment variables, which in turn override `.env`.
 

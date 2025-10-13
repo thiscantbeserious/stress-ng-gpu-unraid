@@ -7,6 +7,7 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 USER_REF="${REF-}"
 USER_OUT="${OUT-}"
 USER_PLATFORM="${PLATFORM-}"
+USER_BUILD_IMAGE="${BUILD_IMAGE-}"
 if [[ -f "${ROOT_DIR}/.env" ]]; then
   set -a
   # shellcheck disable=SC1090
@@ -16,6 +17,7 @@ fi
 REF="${USER_REF:-${REF:-master}}"
 OUT="${USER_OUT:-${OUT:-dist}}"
 PLATFORM="${USER_PLATFORM:-${PLATFORM:-linux/amd64}}"
+BUILD_IMAGE="${USER_BUILD_IMAGE:-${BUILD_IMAGE:-debian:bookworm}}"
 
 cd "${ROOT_DIR}"
 
@@ -55,12 +57,13 @@ mkdir -p "${OUT}"
 
 echo "==> Building stress-ng (ref=${REF}) for platform ${PLATFORM}"
 echo "==> Output directory: ${OUT}"
+echo "==> Docker image: ${BUILD_IMAGE}"
 
 docker run --rm -t \
   --platform="${PLATFORM}" \
   -e STRESS_NG_REF="${REF}" \
   -v "$(pwd)/${OUT}:/out" \
-  debian:bookworm bash -exc '
+  "${BUILD_IMAGE}" bash -exc '
     set -euo pipefail
     apt-get update
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \

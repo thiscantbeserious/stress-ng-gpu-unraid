@@ -1,0 +1,11 @@
+{{PKGNAME}}: stress-ng (GPU-enabled bundle for Unraid)
+{{PKGNAME}}:
+{{PKGNAME}}: Self-contained stress-ng with glibc loader + Mesa/DRM/EGL/GLES libs.
+{{PKGNAME}}: Installs to /opt/stress-ng-gpu and provides /usr/local/bin/stress-ng.
+{{PKGNAME}}:
+{{PKGNAME}}: Upstream: https://github.com/ColinIanKing/stress-ng (GPL-2.0)
+{{PKGNAME}}:
+{{PKGNAME}}: Packager: {{MAINTAINER}}
+{{PKGNAME}}:
+{{PKGNAME}}: Architecture: {{ARCH}}
+{{PKGNAME}}:
