@@ -97,7 +97,7 @@ if [[ ! -f "${DOINST_TEMPLATE}" ]]; then
   exit 1
 fi
 
-mkdir -p "${BINDIR}" "${INSTALLDIR}"
+mkdir -p "${BINDIR}" "${INSTALLDIR}" "${PKGROOT}/usr/local/bin"
 
 echo "==> Staging package at: ${PKGROOT}"
 tar -xzf "${IN_BUNDLE}" -C "${BINDIR}"
@@ -110,6 +110,28 @@ https://github.com/ColinIanKing/stress-ng
 EOF
 
 install -m 0755 "${DOINST_TEMPLATE}" "${INSTALLDIR}/doinst.sh"
+
+WRAPPER_PATH="${PKGROOT}/usr/local/bin/stress-ng"
+cat > "${WRAPPER_PATH}" <<'EOF'
+#!/bin/sh
+set -eu
+
+BUNDLE_DIR="/opt/stress-ng-gpu"
+BIN="${BUNDLE_DIR}/stress-ng"
+LIB_DIR="${BUNDLE_DIR}/lib"
+LOADER="${BUNDLE_DIR}/ld-linux-x86-64.so.2"
+
+if [ -x "${LOADER}" ]; then
+  LD_PATH="${LIB_DIR}"
+  if [ -n "${LD_LIBRARY_PATH-}" ]; then
+    LD_PATH="${LD_PATH}:${LD_LIBRARY_PATH}"
+  fi
+  exec "${LOADER}" --library-path "${LD_PATH}" "${BIN}" "$@"
+fi
+
+exec "${BIN}" "$@"
+EOF
+chmod 0755 "${WRAPPER_PATH}"
 
 escape_sed_replacement() {
   local val="$1"
