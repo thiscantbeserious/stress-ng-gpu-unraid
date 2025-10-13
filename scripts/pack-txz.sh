@@ -122,29 +122,32 @@ LIB_DIR="${BUNDLE_DIR}/lib"
 LOADER="${BUNDLE_DIR}/ld-linux-x86-64.so.2"
 DRI_DIR="${LIB_DIR}/dri"
 
-prepend_path() {
-  local value="$1"
-  local current="$2"
+append_path() {
+  local current="$1"
+  local value="$2"
+  if [ -z "${value}" ]; then
+    printf '%s\n' "${current}"
+    return
+  fi
   if [ -n "${current}" ]; then
-    printf '%s:%s\n' "$value" "$current"
+    printf '%s:%s\n' "${current}" "${value}"
   else
-    printf '%s\n' "$value"
+    printf '%s\n' "${value}"
   fi
 }
 
 if [ -d "${DRI_DIR}" ]; then
-  LIBGL_DRIVERS_PATH="$(prepend_path "${DRI_DIR}" "${LIBGL_DRIVERS_PATH-}")"
+  LIBGL_DRIVERS_PATH="$(append_path "${LIBGL_DRIVERS_PATH-}" "${DRI_DIR}")"
   export LIBGL_DRIVERS_PATH
-  GBM_DRIVERS_PATH="$(prepend_path "${DRI_DIR}" "${GBM_DRIVERS_PATH-}")"
+  GBM_DRIVERS_PATH="$(append_path "${GBM_DRIVERS_PATH-}" "${DRI_DIR}")"
   export GBM_DRIVERS_PATH
 fi
 
 if [ -x "${LOADER}" ]; then
-  LD_PATH="${LIB_DIR}"
-  if [ -n "${LD_LIBRARY_PATH-}" ]; then
-    LD_PATH="${LD_PATH}:${LD_LIBRARY_PATH}"
-  fi
-  exec "${LOADER}" --library-path "${LD_PATH}" "${BIN}" "$@"
+  LD_PATH="${LD_LIBRARY_PATH-}"
+  LD_PATH="$(append_path "${LD_PATH}" "${LIB_DIR}")"
+  export LD_LIBRARY_PATH="${LD_PATH}"
+  exec "${LOADER}" --library-path "${LD_LIBRARY_PATH}" "${BIN}" "$@"
 fi
 
 exec "${BIN}" "$@"
