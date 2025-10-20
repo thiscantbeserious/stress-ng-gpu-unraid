@@ -3,6 +3,10 @@
 A reproducible build environment for producing a **GPU-enabled `stress-ng` binary bundle** for **Unraid** — using a simple `docker run` flow (no Docker Compose/BuildKit).
 The bundle includes the binary, the glibc loader, and all required `.so` libraries (EGL, GBM, GLES, DRM, etc.) in a flat `lib/` folder.
 
+# 20.10.2025: On Hold due to CUDA being a ...
+
+After getting this to work with Mesa I noticed that no matter what I do getting this to work with CUDA is litterally a nightmare. I have tried several different ways and in the end decided. 
+
 ---
 
 ## 🧰 Prerequisites
