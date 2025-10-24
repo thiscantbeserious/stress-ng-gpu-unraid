@@ -5,7 +5,7 @@ The bundle includes the binary, the glibc loader, and all required `.so` librari
 
 # 20.10.2025: On Hold due to CUDA being a ...
 
-After getting this to work with Mesa I noticed that no matter what I do getting this to work with CUDA is litterally a nightmare. I have tried several different ways and in the end decided. 
+After getting this to work with Mesa I noticed that no matter what I do getting this to work with CUDA is litterally a nightmare. I have tried several different ways and in the end decided to just stop for now. 
 
 ---
 
